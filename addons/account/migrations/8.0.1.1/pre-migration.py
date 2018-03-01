@@ -29,9 +29,19 @@ def pre_compute_reconcile_ref_field(cr):
     a long time and consume a lot of memory for large account_move_line.
     """
     cr.execute("""
-        alter table account_move_line
-        add column reconcile_ref character varying;
+        SELECT EXISTS(
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_schema='public'
+              and table_name='account_move_line'
+              and column_name='reconcile_ref')""")
+    exists = cr.fetchone()[0]
+    if not exists:
+        cr.execute("""
+            alter table account_move_line
+            add column reconcile_ref character varying;
         """)
+
     cr.execute("""
         update account_move_line ml
             set reconcile_ref = r.name
